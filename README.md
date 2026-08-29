@@ -17,3 +17,6 @@ Place the required executable files in the same directory as the script, or add 
 1. Save the batch script in the folder containing your `.OSV` raw files and exported `.mp4` videos.
 2. Ensure `ffmpeg.exe` and `exiftool.exe` are present in the same folder.
 3. Double-click the script to run it and follow the on-screen prompts.
+
+## Disclaimer
+This project is an independent open-source tool and is not affiliated, associated, authorized, endorsed by, or in any way officially connected with SZ DJI Technology Co., Ltd. (DJI) or any of its subsidiaries or affiliates.
