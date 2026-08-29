@@ -1,13 +1,4 @@
-:: This script restores the original recording date for DJI Osmo 360 videos, which gets lost when exporting the .OSV raw file to an .mp4. The source is either the filename of the .OSV (CAM_YYYYMMDDHHMMSS_...) or its modification date. For each .OSV, the matching .mp4 with the same name is automatically searched for in the same folder; if no matching file exists, a different filename can be entered manually.
-:: Since the Osmo 360 has no GPS and therefore does not store a timezone in the metadata, the timezone is requested, with this PC's timezone used as the default. Important: the camera must always be set to the local time of the recording location.
-:: Optionally, the videos can also be compressed with FFmpeg using a selectable CRF value (H.265 or AV1). The correct recording date is written to both the original file and the compressed output file.
-::
-:: How to use this script:
-::
-:: Save this script in a folder where the .OSV and .mp4 also exists.
-:: Download "ffmpeg-release-essentials.zip" here, extract it, and copy ffmpeg.exe from the "bin" folder into this directory: https://www.gyan.dev/ffmpeg/builds/
-:: Download "exiftool-XXX.zip" here, extract it, copy it into this directory, and rename the .exe file to "exiftool.exe": https://exiftool.org/
-:: Version 1.0 - 2026-08-26 - @nurjns - EN
+:: Version 1.0 - 2026-08-26 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
