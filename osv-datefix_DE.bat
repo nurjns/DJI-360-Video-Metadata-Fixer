@@ -233,7 +233,7 @@ echo [INFO] Komprimiere nach: !OUTFILE!
 if "%CODECWAHL%"=="1" (
 	ffmpeg -nostdin -y -i "!MP4!" -c:v libx265 -crf %CRF_WERT% -preset slow -pix_fmt yuv420p -tag:v hvc1 -movflags +faststart -c:a copy "!OUTFILE!"
 ) else (
-	ffmpeg -nostdin -y -i "!MP4!" -c:v libaom-av1 -crf %CRF_WERT% -cpu-used %CPU_USED% -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
+	ffmpeg -nostdin -y -i "!MP4!" -c:v libaom-av1 -crf %CRF_WERT% -b:v 0 -cpu-used %CPU_USED% -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
 )
 
 if errorlevel 1 (
