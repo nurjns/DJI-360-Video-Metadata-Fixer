@@ -1,4 +1,4 @@
-:: Version 1.0.0 - 29.08.2026 - @nurjns
+:: Version 1.0.1 - 30.08.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
