@@ -1,4 +1,4 @@
-:: Version 1.0.2 - 2026-09-01 - @nurjns
+:: Version 1.0.3 - 2026-09-01 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -233,14 +233,18 @@ if "%CODECWAHL%"=="1" (
 	ffmpeg -nostdin -y -i "!MP4!" -c:v libx265 -crf %CRF_WERT% -preset medium -pix_fmt yuv420p -tag:v hvc1 -movflags +faststart -c:a copy "!OUTFILE!"
 ) else (
 	:: AV1
-	if !CRF_WERT! LEQ 22 (
-		set "PRESET=2"
-	) else if !CRF_WERT! LEQ 28 (
-		set "PRESET=3"
-	) else if !CRF_WERT! LEQ 35 (
-		set "PRESET=6"
+	if not "!PRESET_MANUAL!"=="" (
+		set "PRESET=!PRESET_MANUAL!"
 	) else (
-		set "PRESET=10"
+		if !CRF_WERT! LEQ 22 (
+			set "PRESET=2"
+		) else if !CRF_WERT! LEQ 28 (
+			set "PRESET=3"
+		) else if !CRF_WERT! LEQ 35 (
+			set "PRESET=6"
+		) else (
+			set "PRESET=10"
+		)
 	)
 	ffmpeg -nostdin -y -i "!MP4!" -c:v libsvtav1 -crf %CRF_WERT% -preset !PRESET! -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
 )
@@ -355,6 +359,23 @@ echo Invalid CRF value^^!
 goto ASK_CRF
 :CRF_OK
 
+set "PRESET_MANUAL="
+if not "!CODECWAHL!"=="2" goto :PRESET_DONE
+
+:ASK_PRESET
+set "PRESET_MANUAL="
+set /p PRESET_MANUAL="AV1 preset (0-13, 0=slow/small, 13=fast/large, leave empty = automatic): "
+if not "!PRESET_MANUAL!"=="" (
+	echo !PRESET_MANUAL!| findstr /r "^[0-9][0-9]*$" >nul
+	if errorlevel 1 goto :PRESET_FEHLER
+	if !PRESET_MANUAL! GTR 13 goto :PRESET_FEHLER
+)
+goto :PRESET_DONE
+:PRESET_FEHLER
+echo Invalid preset value^^!
+goto ASK_PRESET
+
+:PRESET_DONE
 goto :eof
 
 :: ==========================================================
