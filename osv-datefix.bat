@@ -1,4 +1,4 @@
-:: Version 1.0.1 - 2026-08-30 - @nurjns
+:: Version 1.0.2 - 2026-09-01 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -50,7 +50,7 @@ echo.
 
 :: User prompt: source for the recording date
 echo Which source should be used for the recording date?
-echo 1 - Filename of the OSV (default)
+echo 1 - Filename of the OSV (Default)
 echo 2 - Modification date of the OSV
 set /p DATESOURCE="Input (1 or 2): "
 
@@ -108,7 +108,6 @@ echo Done. Successful: %CNT_OK%  Skipped: %CNT_SKIP%  Errors: %CNT_ERR%
 powershell -c [console]::beep(500,200)
 pause
 exit /b 0
-
 
 :: ==========================================================
 :: Process a single OSV file
@@ -202,7 +201,6 @@ if /i "%COMPRESS%"=="y" (
 )
 goto :eof
 
-
 :: ==========================================================
 :: Compress video with ffmpeg, then set the date
 :: ==========================================================
@@ -231,9 +229,20 @@ if exist "!OUTFILE!" (
 
 echo [INFO] Compressing to: !OUTFILE!
 if "%CODECWAHL%"=="1" (
-	ffmpeg -nostdin -y -i "!MP4!" -c:v libx265 -crf %CRF_WERT% -preset slow -pix_fmt yuv420p -tag:v hvc1 -movflags +faststart -c:a copy "!OUTFILE!"
+	:: H.265
+	ffmpeg -nostdin -y -i "!MP4!" -c:v libx265 -crf %CRF_WERT% -preset medium -pix_fmt yuv420p -tag:v hvc1 -movflags +faststart -c:a copy "!OUTFILE!"
 ) else (
-	ffmpeg -nostdin -y -i "!MP4!" -c:v libaom-av1 -crf %CRF_WERT% -b:v 0 -cpu-used %CPU_USED% -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
+	:: AV1
+	if !CRF_WERT! LEQ 22 (
+		set "PRESET=2"
+	) else if !CRF_WERT! LEQ 28 (
+		set "PRESET=3"
+	) else if !CRF_WERT! LEQ 35 (
+		set "PRESET=6"
+	) else (
+		set "PRESET=10"
+	)
+	ffmpeg -nostdin -y -i "!MP4!" -c:v libsvtav1 -crf %CRF_WERT% -preset !PRESET! -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
 )
 
 if errorlevel 1 (
@@ -251,7 +260,6 @@ if "!WRITE_OK!"=="0" (
 
 set /a CNT_OK+=1
 goto :eof
-
 
 :: ==========================================================
 :: Write date via ExifTool to a file and verify it
@@ -298,7 +306,6 @@ if not "!VERIFY!"=="!TIMESTAMP!" (
 echo [OK] Processed: !TARGET!
 goto :eof
 
-
 :: ==========================================================
 :: Ask for compression settings
 :: ==========================================================
@@ -319,8 +326,8 @@ if errorlevel 1 (
 :: User prompt: codec selection
 echo.
 echo Choose codec:
-echo 1 - H.265 - Good compression, faster encoding, wide support (default)
-echo 2 - AV1 - Best compression, but very slow, for newer devices
+echo 1 - H.265 - Good compression, broad support (Default)
+echo 2 - AV1 - Best compression, speed depends on quality setting, for newer devices
 set /p CODECWAHL="Input (1 or 2): "
 
 if not "!CODECWAHL!"=="1" if not "!CODECWAHL!"=="2" (
@@ -334,7 +341,7 @@ set CRF_WERT=
 if "!CODECWAHL!"=="1" (
 	echo H.265 CRF value ^(18=high, 24=normal, 30=low, 35=very low^)
 ) else (
-	echo AV1 CRF value ^(20=high, 30=normal, 38=low, 45=very low^)
+	echo AV1 CRF value ^(18=very high, 22=high, 30=normal, 40=low, 50=very low^)
 )
 set /p CRF_WERT="Which CRF value should be used? "
 
@@ -348,18 +355,7 @@ echo Invalid CRF value^^!
 goto ASK_CRF
 :CRF_OK
 
-:: AV1 - determine cpu-used dynamically
-if !CRF_WERT! LEQ 20 (
-	set "CPU_USED=2"
-) else if !CRF_WERT! LEQ 28 (
-	set "CPU_USED=4"
-) else if !CRF_WERT! LEQ 35 (
-	set "CPU_USED=6"
-) else (
-	set "CPU_USED=8"
-)
 goto :eof
-
 
 :: ==========================================================
 :: Date from the OSV filename (CAM_YYYYMMDDHHMMSS_...)
@@ -378,7 +374,6 @@ set "ss=!DATETIME:~12,2!"
 
 set "TIMESTAMP=!YYYY!:!MM!:!DD! !hh!:!nn!:!ss!"
 goto :eof
-
 
 :: ==========================================================
 :: Date from the OSV file's modification date
