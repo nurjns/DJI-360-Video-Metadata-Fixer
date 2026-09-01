@@ -1,4 +1,4 @@
-:: Version 1.0.3 - 01.09.2026 - @nurjns
+:: Version 1.0.4 - 01.09.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -347,14 +347,14 @@ set CRF_WERT=
 if "!CODECWAHL!"=="1" (
 	echo H.265 CRF-Wert ^(18=hoch, 24=normal, 30=niedrig, 35=sehr niedrig^)
 ) else (
-	echo AV1 CRF-Wert ^(20=sehr hoch, 24=hoch, 30=normal, 40=niedrig, 50=sehr niedrig^)
+	echo AV1 CRF-Wert ^(20=sehr hoch, 26=hoch, 35=normal, 45=niedrig, 55=sehr niedrig^)
 )
 set /p CRF_WERT="Welcher CRF-Wert soll verwendet werden? "
 
 echo !CRF_WERT!| findstr /r "^[0-9][0-9]*$" >nul
 if errorlevel 1 goto :CRF_FEHLER
 if "!CRF_WERT!" LSS "16" goto :CRF_FEHLER
-if "!CRF_WERT!" GTR "50" goto :CRF_FEHLER
+if "!CRF_WERT!" GTR "55" goto :CRF_FEHLER
 goto :CRF_OK
 :CRF_FEHLER
 echo Ungueltige Eingabe bei CRF-Wert^^!
