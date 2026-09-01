@@ -10,7 +10,7 @@ A Windows batch script to automatically restore the original recording date, set
 ## Prerequisites
 Place the required executable files in the same directory as the script, or add them to your system `PATH`:
 
-* **[FFmpeg](https://www.gyan.dev/ffmpeg/builds/)** — Download `ffmpeg-release-essentials.zip`, extract it, and copy `ffmpeg.exe` from the `bin` folder into the script directory.
+* **[FFmpeg](https://www.gyan.dev/ffmpeg/builds/)** — Download `ffmpeg-release-full.7z`, extract it, and copy `ffmpeg.exe` from the `bin` folder into the script directory.
 * **[ExifTool](https://exiftool.org/)** — Download the Windows executable zip, extract it, rename `exiftool(-k).exe` to `exiftool.exe`, and copy it into the script directory.
 
 ## How to Use
