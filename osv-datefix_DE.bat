@@ -239,13 +239,13 @@ if "%CODECWAHL%"=="1" (
 		set "PRESET=!PRESET_MANUAL!"
 	) else (
 		if !CRF_WERT! LEQ 22 (
-			set "PRESET=2"
-		) else if !CRF_WERT! LEQ 28 (
 			set "PRESET=3"
+		) else if !CRF_WERT! LEQ 28 (
+			set "PRESET=4"
 		) else if !CRF_WERT! LEQ 35 (
-			set "PRESET=6"
+			set "PRESET=5"
 		) else (
-			set "PRESET=10"
+			set "PRESET=8"
 		)
 	)
 	ffmpeg -nostdin -y -i "!MP4!" -c:v libsvtav1 -crf %CRF_WERT% -preset !PRESET! -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
