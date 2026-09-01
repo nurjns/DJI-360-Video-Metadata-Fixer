@@ -1,4 +1,4 @@
-:: Version 1.0.1 - 30.08.2026 - @nurjns
+:: Version 1.0.2 - 01.09.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -231,9 +231,20 @@ if exist "!OUTFILE!" (
 
 echo [INFO] Komprimiere nach: !OUTFILE!
 if "%CODECWAHL%"=="1" (
-	ffmpeg -nostdin -y -i "!MP4!" -c:v libx265 -crf %CRF_WERT% -preset slow -pix_fmt yuv420p -tag:v hvc1 -movflags +faststart -c:a copy "!OUTFILE!"
+	:: H.265
+	ffmpeg -nostdin -y -i "!MP4!" -c:v libx265 -crf %CRF_WERT% -preset medium -pix_fmt yuv420p -tag:v hvc1 -movflags +faststart -c:a copy "!OUTFILE!"
 ) else (
-	ffmpeg -nostdin -y -i "!MP4!" -c:v libaom-av1 -crf %CRF_WERT% -b:v 0 -cpu-used %CPU_USED% -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
+	:: AV1
+	if !CRF_WERT! LEQ 22 (
+		set "PRESET=2"
+	) else if !CRF_WERT! LEQ 28 (
+		set "PRESET=3"
+	) else if !CRF_WERT! LEQ 35 (
+		set "PRESET=6"
+	) else (
+		set "PRESET=10"
+	)
+	ffmpeg -nostdin -y -i "!MP4!" -c:v libsvtav1 -crf %CRF_WERT% -preset !PRESET! -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
 )
 
 if errorlevel 1 (
@@ -251,7 +262,6 @@ if "!WRITE_OK!"=="0" (
 
 set /a CNT_OK+=1
 goto :eof
-
 
 :: ==========================================================
 :: Datum per ExifTool in eine Datei schreiben und kontrollieren
@@ -298,7 +308,6 @@ if not "!VERIFY!"=="!TIMESTAMP!" (
 echo [OK] Verarbeitet: !TARGET!
 goto :eof
 
-
 :: ==========================================================
 :: Einstellungen fuer die Kompression abfragen
 :: ==========================================================
@@ -319,8 +328,8 @@ if errorlevel 1 (
 :: Benutzerabfrage: Codec-Auswahl
 echo.
 echo Waehle Codec:
-echo 1 - H.265 - Gute Kompression, schnellere Kodierung, breite Unterstuetzung (Standard)
-echo 2 - AV1 - Beste Kompression, aber sehr langsam, fuer neuere Geraete
+echo 1 - H.265 - Gute Kompression, breite Unterstuetzung (Standard)
+echo 2 - AV1 - Beste Kompression, Geschwindigkeit haengt von Qualitaetsstufe ab, fuer neuere Geraete
 set /p CODECWAHL="Eingabe (1 oder 2): "
 
 if not "!CODECWAHL!"=="1" if not "!CODECWAHL!"=="2" (
@@ -334,7 +343,7 @@ set CRF_WERT=
 if "!CODECWAHL!"=="1" (
 	echo H.265 CRF-Wert ^(18=hoch, 24=normal, 30=niedrig, 35=sehr niedrig^)
 ) else (
-	echo AV1 CRF-Wert ^(20=hoch, 30=normal, 38=niedrig, 45=sehr niedrig^)
+	echo AV1 CRF-Wert ^(18=sehr hoch, 22=hoch, 30=normal, 40=niedrig, 50=sehr niedrig^)
 )
 set /p CRF_WERT="Welcher CRF-Wert soll verwendet werden? "
 
@@ -348,18 +357,7 @@ echo Ungueltige Eingabe bei CRF-Wert^^!
 goto ASK_CRF
 :CRF_OK
 
-:: AV1 - CPU-Used dynamisch bestimmen
-if !CRF_WERT! LEQ 20 (
-	set "CPU_USED=2"
-) else if !CRF_WERT! LEQ 28 (
-	set "CPU_USED=4"
-) else if !CRF_WERT! LEQ 35 (
-	set "CPU_USED=6"
-) else (
-	set "CPU_USED=8"
-)
 goto :eof
-
 
 :: ==========================================================
 :: Datum aus dem OSV-Dateinamen (CAM_JJJJMMTTHHMMSS_...)
@@ -378,7 +376,6 @@ set "ss=!DATETIME:~12,2!"
 
 set "TIMESTAMP=!YYYY!:!MM!:!DD! !hh!:!nn!:!ss!"
 goto :eof
-
 
 :: ==========================================================
 :: Datum aus dem Aenderungsdatum der OSV-Datei
