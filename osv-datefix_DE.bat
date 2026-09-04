@@ -1,4 +1,4 @@
-:: Version 1.0.5 - 01.09.2026 - @nurjns
+:: Version 1.0.6 - 04.09.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -248,7 +248,7 @@ if "%CODECWAHL%"=="1" (
 			set "PRESET=8"
 		)
 	)
-	ffmpeg -nostdin -y -i "!MP4!" -c:v libsvtav1 -crf %CRF_WERT% -preset !PRESET! -pix_fmt yuv420p -movflags +faststart -c:a copy "!OUTFILE!"
+	ffmpeg -nostdin -y -i "!MP4!" -c:v libsvtav1 -crf %CRF_WERT% -preset !PRESET! -g 240 -pix_fmt yuv420p10le -svtav1-params tune=0 -movflags +faststart -c:a copy "!OUTFILE!"
 )
 
 if errorlevel 1 (
