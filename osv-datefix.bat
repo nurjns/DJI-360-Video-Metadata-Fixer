@@ -1,12 +1,12 @@
-:: Version 1.0.6 - 2026-09-04 - @nurjns
+:: Version 1.1.0 - 2026-09-14 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
-title DJI Osmo 360 - Restore recording date from OSV
+title DJI 360 Video Metadata Fixer
 
 echo ==========================================================
-echo  DJI Osmo 360 - Restore recording date from .OSV
+echo  DJI 360 Video Metadata Fixer
 echo ==========================================================
 echo.
 
@@ -35,20 +35,24 @@ if errorlevel 1 (
 	pause & exit /b 1
 )
 
-:: Check whether any OSV files exist at all
+:: Check whether any OSV or standalone MP4 files exist at all
 set "OSV_COUNT=0"
 for %%F in (*.osv) do set /a OSV_COUNT+=1
-if %OSV_COUNT%==0 (
-	echo [ERROR] No .OSV files found in this folder.
+set "MP4_COUNT=0"
+for %%F in (dji_mimo_*.mp4 compose_video_*.mp4) do set /a MP4_COUNT+=1
+if %OSV_COUNT%==0 if %MP4_COUNT%==0 (
+	echo [ERROR] No .OSV or supported MP4 files found in this folder.
 	echo The script must be located in the same folder as the OSV and exported MP4 files.
 	echo Current folder: %CD%
 	pause & exit /b 1
 )
 
-echo [INFO] %OSV_COUNT% OSV file^(s^) found.
+echo [INFO] %OSV_COUNT% OSV file^(s^), %MP4_COUNT% standalone MP4 file^(s^) found.
 echo.
 
-:: User prompt: source for the recording date
+:: User prompt: source for the recording date (only relevant for OSV files)
+set "DATESOURCE=1"
+if %OSV_COUNT%==0 goto :SKIP_DATESOURCE
 echo Which source should be used for the recording date?
 echo 1 - Filename of the OSV (Default)
 echo 2 - Modification date of the OSV
@@ -58,6 +62,7 @@ if not "%DATESOURCE%"=="1" if not "%DATESOURCE%"=="2" (
 	echo Invalid input. Default: filename will be used.
 	set DATESOURCE=1
 )
+:SKIP_DATESOURCE
 
 :: User prompt: timezone
 :: Automatically detect daylight saving time for Germany
@@ -100,6 +105,12 @@ set "CNT_ERR=0"
 :: Loop through all OSV files
 for %%F in (*.osv) do (
 	call :PROCESS "%%F"
+	echo.
+)
+
+:: Loop through standalone MP4 files without OSV (dji_mimo / compose_video)
+for %%F in (dji_mimo_*.mp4 compose_video_*.mp4) do (
+	call :PROCESS_NOOSV "%%F"
 	echo.
 )
 
@@ -178,6 +189,60 @@ set "MP4=!MANUAL!"
 
 :MP4_OK
 :: --- Check whether it's really a readable MP4 file ---
+set "FILETYPE="
+for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -FileType "!MP4!" 2^>nul`) do set "FILETYPE=%%T"
+if /i not "!FILETYPE!"=="MP4" (
+	echo [ERROR] "!MP4!" is not a valid or readable MP4 file ^(detected: "!FILETYPE!"^) - skipped
+	set /a CNT_ERR+=1
+	goto :eof
+)
+
+:: --- Write the date to the original file ---
+call :WRITE_DATE "!MP4!"
+if "!WRITE_OK!"=="0" (
+	set /a CNT_ERR+=1
+	goto :eof
+)
+
+:: --- Optional: compress video and set the date there too ---
+if /i "%COMPRESS%"=="y" (
+	call :COMPRESS_FILE
+) else (
+	set /a CNT_OK+=1
+)
+goto :eof
+
+:: ==========================================================
+:: Process a standalone MP4 file without OSV (dji_mimo / compose_video)
+:: ==========================================================
+:PROCESS_NOOSV
+set "MP4=%~1"
+set "BASE=%~n1"
+set "TIMESTAMP="
+
+:: Ignore already compressed derivatives (e.g. *_crf28.mp4)
+echo !BASE!| findstr /i "_crf" >nul
+if not errorlevel 1 goto :eof
+
+echo Processing: !MP4!
+
+:: --- Determine recording date ---
+:: dji_mimo files carry the date in the name, everything else is asked via dialog
+call :DATE_FROM_MIMO
+if not defined TIMESTAMP (
+	echo [INFO] No date in the filename - please choose it in the window
+	call :DATE_FROM_PICKER "!MP4!"
+)
+
+if not defined TIMESTAMP (
+	echo [OK] Skipped: !MP4! - no date selected
+	set /a CNT_SKIP+=1
+	goto :eof
+)
+
+echo [INFO] Recording date: !TIMESTAMP!!TIMEZONE!
+
+:: --- Check whether it is really a readable MP4 file ---
 set "FILETYPE="
 for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -FileType "!MP4!" 2^>nul`) do set "FILETYPE=%%T"
 if /i not "!FILETYPE!"=="MP4" (
@@ -403,4 +468,35 @@ goto :eof
 for /f "usebackq delims=" %%T in (`powershell -NoLogo -NoProfile -Command "(Get-Item -LiteralPath '!OSV!').LastWriteTime.ToString('yyyy:MM:dd HH:mm:ss')"`) do (
 	set "TIMESTAMP=%%T"
 )
+goto :eof
+
+:: ==========================================================
+:: Date from a DJI Mimo filename (dji_mimo_YYYYMMDD_HHMMSS_...)
+:: ==========================================================
+:DATE_FROM_MIMO
+echo !BASE!| findstr /r /i "^dji_mimo_[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]_" >nul
+if errorlevel 1 goto :eof
+
+for /f "tokens=3,4 delims=_" %%A in ("!BASE!") do (
+	set "DATEPART=%%A"
+	set "TIMEPART=%%B"
+)
+set "YYYY=!DATEPART:~0,4!"
+set "MM=!DATEPART:~4,2!"
+set "DD=!DATEPART:~6,2!"
+set "hh=!TIMEPART:~0,2!"
+set "nn=!TIMEPART:~2,2!"
+set "ss=!TIMEPART:~4,2!"
+
+set "TIMESTAMP=!YYYY!:!MM!:!DD! !hh!:!nn!:!ss!"
+goto :eof
+
+:: ==========================================================
+:: Ask for the recording date graphically (Windows window)
+:: ==========================================================
+:DATE_FROM_PICKER
+set "PICK_FILE=%~1"
+set "TIMESTAMP="
+for /f "usebackq delims=" %%T in (`powershell -NoProfile -STA -Command "$ErrorActionPreference='SilentlyContinue'; Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $f=New-Object System.Windows.Forms.Form; $f.Text='Select recording date'; $f.ClientSize=New-Object System.Drawing.Size(320,150); $f.StartPosition='CenterScreen'; $f.FormBorderStyle='FixedDialog'; $f.MaximizeBox=$false; $f.MinimizeBox=$false; $f.TopMost=$true; $l=New-Object System.Windows.Forms.Label; $l.Text='File: '+$env:PICK_FILE; $l.AutoSize=$false; $l.Size=New-Object System.Drawing.Size(300,30); $l.Location=New-Object System.Drawing.Point(10,10); $f.Controls.Add($l); $dp=New-Object System.Windows.Forms.DateTimePicker; $dp.Format='Custom'; $dp.CustomFormat='dd.MM.yyyy'; $dp.ShowUpDown=$true; $dp.Location=New-Object System.Drawing.Point(10,55); $dp.Width=150; $f.Controls.Add($dp); $tp=New-Object System.Windows.Forms.DateTimePicker; $tp.Format='Time'; $tp.ShowUpDown=$true; $tp.Location=New-Object System.Drawing.Point(170,55); $tp.Width=130; $f.Controls.Add($tp); try{$fi=Get-Item -LiteralPath $env:PICK_FILE; $dp.Value=$fi.LastWriteTime; $tp.Value=$fi.LastWriteTime}catch{}; $b=New-Object System.Windows.Forms.Button; $b.Text='OK'; $b.Location=New-Object System.Drawing.Point(10,100); $b.DialogResult=[System.Windows.Forms.DialogResult]::OK; $f.Controls.Add($b); $f.AcceptButton=$b; $c=New-Object System.Windows.Forms.Button; $c.Text='Cancel'; $c.Location=New-Object System.Drawing.Point(120,100); $c.DialogResult=[System.Windows.Forms.DialogResult]::Cancel; $f.Controls.Add($c); $f.CancelButton=$c; if($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){($dp.Value.Date + $tp.Value.TimeOfDay).ToString('yyyy:MM:dd HH:mm:ss')}"`) do set "TIMESTAMP=%%T"
+set "PICK_FILE="
 goto :eof
