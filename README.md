@@ -10,10 +10,10 @@ A Windows batch script to automatically restore the original recording date, set
 * **Optional Compression:** Re-encodes videos using FFmpeg with custom CRF settings (H.265 or AV1) while preserving all original metadata.
 
 ## Prerequisites
-Place the required executable files in the same directory as the script, or add them to your system `PATH`:
+Place the executable files below in the same directory as the script, or add them to your system `PATH`. **ExifTool is required; FFmpeg is only needed for the optional compression** — if you just want to fix dates and timezones (e.g. for DJI Mimo exports), ExifTool alone is enough.
 
-* **[FFmpeg](https://www.gyan.dev/ffmpeg/builds/)** — Download `ffmpeg-release-full.7z`, extract it, and copy `ffmpeg.exe` from the `bin` folder into the script directory.
-* **[ExifTool](https://exiftool.org/)** — Download the Windows executable zip, extract it, rename `exiftool(-k).exe` to `exiftool.exe`, and copy it into the script directory.
+* **[FFmpeg](https://www.gyan.dev/ffmpeg/builds/)** *(optional, compression only)* — Download `ffmpeg-release-full.7z`, extract it, and copy `ffmpeg.exe` from the `bin` folder into the script directory.
+* **[ExifTool](https://exiftool.org/)** *(required)* — Download the Windows executable zip, extract it, rename `exiftool(-k).exe` to `exiftool.exe`, and copy it into the script directory.
 
 ## How to Use
 1. Save the batch script in the folder containing your exported `.mp4` videos (and any `.OSV` raw files, if you have them).
