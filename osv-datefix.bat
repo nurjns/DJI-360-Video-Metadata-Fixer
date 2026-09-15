@@ -1,4 +1,4 @@
-:: Version 1.1.0 - 2026-09-14 - @nurjns
+:: Version 1.1.1 - 2026-09-15 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -354,7 +354,7 @@ if "!CURRENT!"=="!TIMESTAMP!" (
 	"-QuickTime:TrackModifyDate=!TIMESTAMP!" ^
 	"-QuickTime:MediaCreateDate=!TIMESTAMP!" ^
 	"-QuickTime:MediaModifyDate=!TIMESTAMP!" ^
-	"-FileModifyDate=!TIMESTAMP!" ^
+	"-FileModifyDate=!TIMESTAMP!!TIMEZONE!" ^
 	"!TARGET!"
 
 if errorlevel 1 (
