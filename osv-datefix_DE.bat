@@ -1,4 +1,4 @@
-:: Version 1.1.2 - 22.09.2026 - @nurjns
+:: Version 1.1.3 - 22.09.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -262,12 +262,18 @@ if not errorlevel 1 goto :eof
 
 echo Bearbeite: !ORPHAN!
 echo [WARNUNG] Keine gleichnamige OSV gefunden. Zu welcher OSV gehoert diese MP4?
+set "SUGGEST="
 for /l %%I in (1,1,%OSV_COUNT%) do call :SHOW_OSV %%I
+set "ASK_TXT=Nummer der OSV (leer = ueberspringen): "
+if defined SUGGEST set "ASK_TXT=Nummer der OSV (leer = !OSV_%SUGGEST%!, 0 = ueberspringen): "
 
 :ASK_OSV
 set "OSV_CHOICE="
-set /p "OSV_CHOICE=Nummer der OSV (leer = ueberspringen): "
-if "!OSV_CHOICE!"=="" (
+set /p "OSV_CHOICE=!ASK_TXT!"
+:: Leere Eingabe: Vorschlag uebernehmen, sonst ueberspringen
+if "!OSV_CHOICE!"=="" if defined SUGGEST set "OSV_CHOICE=!SUGGEST!"
+if "!OSV_CHOICE!"=="" set "OSV_CHOICE=0"
+if "!OSV_CHOICE!"=="0" (
 	echo [OK] Uebersprungen: !ORPHAN! - keine OSV zugeordnet
 	set /a CNT_SKIP+=1
 	echo.
@@ -278,7 +284,7 @@ if errorlevel 1 goto :OSV_FEHLER
 if !OSV_CHOICE! GTR %OSV_COUNT% goto :OSV_FEHLER
 goto :OSV_OK
 :OSV_FEHLER
-echo Ungueltige Eingabe^^! Bitte eine Zahl von 1 bis %OSV_COUNT% eingeben.
+echo Ungueltige Eingabe^^! Bitte eine Zahl von 0 bis %OSV_COUNT% eingeben.
 goto :ASK_OSV
 :OSV_OK
 
@@ -294,7 +300,13 @@ goto :eof
 :SHOW_OSV
 set "MARK="
 echo !ORPHAN_BASE!| findstr /b /l /i /c:"!OSVBASE_%~1!" >nul
-if not errorlevel 1 set "MARK= [Name passt]"
+if errorlevel 1 goto :SHOW_OSV_ECHO
+set "MARK= [Name passt]"
+:: Bei mehreren Treffern den laengsten Namen vorschlagen
+if not defined SUGGEST set "SUGGEST=%~1"
+echo !OSVBASE_%~1!| findstr /b /l /i /c:"!OSVBASE_%SUGGEST%!" >nul
+if not errorlevel 1 set "SUGGEST=%~1"
+:SHOW_OSV_ECHO
 echo         %~1 - !OSV_%~1!!MARK!
 goto :eof
 
