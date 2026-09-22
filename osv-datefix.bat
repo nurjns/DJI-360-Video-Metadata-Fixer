@@ -1,4 +1,4 @@
-:: Version 1.1.1 - 2026-09-15 - @nurjns
+:: Version 1.1.1 - 2026-09-22 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -102,10 +102,27 @@ set "CNT_OK=0"
 set "CNT_SKIP=0"
 set "CNT_ERR=0"
 
+:: Temporary list of MP4 files already assigned to an OSV
+set "DONE_LIST=%TEMP%\osv-datefix_%RANDOM%.tmp"
+type nul > "%DONE_LIST%"
+
 :: Loop through all OSV files
 for %%F in (*.osv) do (
 	call :PROCESS "%%F"
 	echo.
+)
+
+:: Loop through MP4 files without an OSV of the same name (e.g. multiple exports of one OSV)
+if %OSV_COUNT% GTR 0 (
+	set "IDX=0"
+	for %%F in (*.osv) do (
+		set /a IDX+=1
+		set "OSV_!IDX!=%%F"
+		set "OSVBASE_!IDX!=%%~nF"
+	)
+	for %%F in (*.mp4) do (
+		call :PROCESS_ORPHAN "%%F"
+	)
 )
 
 :: Loop through standalone MP4 files without OSV (dji_mimo / compose_video)
@@ -116,6 +133,7 @@ for %%F in (dji_mimo_*.mp4 compose_video_*.mp4) do (
 
 echo ----------------------------------------------------------
 echo Done. Successful: %CNT_OK%  Skipped: %CNT_SKIP%  Errors: %CNT_ERR%
+del "%DONE_LIST%" >nul 2>&1
 powershell -c [console]::beep(500,200)
 pause
 exit /b 0
@@ -127,9 +145,9 @@ exit /b 0
 set "OSV=%~1"
 set "BASE=%~n1"
 set "TIMESTAMP="
-set "MP4="
+set "MP4=%~2"
 
-echo Processing: !OSV!
+if not defined MP4 echo Processing: !OSV!
 
 :: --- Determine recording date ---
 if "%DATESOURCE%"=="1" (
@@ -149,6 +167,9 @@ if not defined TIMESTAMP (
 )
 
 echo [INFO] Recording date: !TIMESTAMP!!TIMEZONE!
+
+:: --- MP4 already assigned (from :PROCESS_ORPHAN)? Then skip the search ---
+if defined MP4 goto :MP4_OK
 
 :: --- Find matching MP4 ---
 if exist "!BASE!.mp4" (
@@ -188,6 +209,9 @@ if exist "!MANUAL!\" (
 set "MP4=!MANUAL!"
 
 :MP4_OK
+:: Remember assigned MP4 so it will not be asked for again later
+>>"%DONE_LIST%" echo(!MP4!
+
 :: --- Check whether it's really a readable MP4 file ---
 set "FILETYPE="
 for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -FileType "!MP4!" 2^>nul`) do set "FILETYPE=%%T"
@@ -210,6 +234,65 @@ if /i "%COMPRESS%"=="y" (
 ) else (
 	set /a CNT_OK+=1
 )
+goto :eof
+
+:: ==========================================================
+:: Assign an MP4 without an OSV of the same name to an OSV
+:: ==========================================================
+:PROCESS_ORPHAN
+set "ORPHAN=%~1"
+set "ORPHAN_BASE=%~n1"
+
+:: dji_mimo / compose_video are processed separately
+echo !ORPHAN_BASE!| findstr /r /i "^dji_mimo_ ^compose_video_" >nul
+if not errorlevel 1 goto :eof
+
+:: Ignore already compressed derivatives (e.g. *_crf28.mp4)
+echo !ORPHAN_BASE!| findstr /i "_crf" >nul
+if not errorlevel 1 goto :eof
+
+:: MP4 with an OSV of the same name was already processed by the OSV loop
+if exist "!ORPHAN_BASE!.osv" goto :eof
+
+:: Already assigned to an OSV manually
+findstr /x /l /i /c:"!ORPHAN!" "%DONE_LIST%" >nul 2>&1
+if not errorlevel 1 goto :eof
+
+echo Processing: !ORPHAN!
+echo [WARNING] No OSV of the same name found. Which OSV does this MP4 belong to?
+for /l %%I in (1,1,%OSV_COUNT%) do call :SHOW_OSV %%I
+
+:ASK_OSV
+set "OSV_CHOICE="
+set /p "OSV_CHOICE=Number of the OSV (leave blank to skip): "
+if "!OSV_CHOICE!"=="" (
+	echo [OK] Skipped: !ORPHAN! - no OSV assigned
+	set /a CNT_SKIP+=1
+	echo.
+	goto :eof
+)
+echo !OSV_CHOICE!| findstr /r "^[1-9][0-9]*$" >nul
+if errorlevel 1 goto :OSV_FEHLER
+if !OSV_CHOICE! GTR %OSV_COUNT% goto :OSV_FEHLER
+goto :OSV_OK
+:OSV_FEHLER
+echo Invalid input^^! Please enter a number between 1 and %OSV_COUNT%.
+goto :ASK_OSV
+:OSV_OK
+
+for %%N in (!OSV_CHOICE!) do set "OSV_PICK=!OSV_%%N!"
+call :PROCESS "!OSV_PICK!" "!ORPHAN!"
+echo.
+goto :eof
+
+:: ==========================================================
+:: Show an OSV entry of the selection list (with hint if the name matches)
+:: ==========================================================
+:SHOW_OSV
+set "MARK="
+echo !ORPHAN_BASE!| findstr /b /l /i /c:"!OSVBASE_%~1!" >nul
+if not errorlevel 1 set "MARK= [name matches]"
+echo         %~1 - !OSV_%~1!!MARK!
 goto :eof
 
 :: ==========================================================
