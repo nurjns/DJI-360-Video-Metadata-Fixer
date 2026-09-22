@@ -1,4 +1,4 @@
-:: Version 1.1.2 - 2026-09-22 - @nurjns
+:: Version 1.1.3 - 2026-09-22 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -260,12 +260,18 @@ if not errorlevel 1 goto :eof
 
 echo Processing: !ORPHAN!
 echo [WARNING] No OSV of the same name found. Which OSV does this MP4 belong to?
+set "SUGGEST="
 for /l %%I in (1,1,%OSV_COUNT%) do call :SHOW_OSV %%I
+set "ASK_TXT=Number of the OSV (leave blank to skip): "
+if defined SUGGEST set "ASK_TXT=Number of the OSV (leave blank for !OSV_%SUGGEST%!, 0 to skip): "
 
 :ASK_OSV
 set "OSV_CHOICE="
-set /p "OSV_CHOICE=Number of the OSV (leave blank to skip): "
-if "!OSV_CHOICE!"=="" (
+set /p "OSV_CHOICE=!ASK_TXT!"
+:: Empty input: use the suggestion, otherwise skip
+if "!OSV_CHOICE!"=="" if defined SUGGEST set "OSV_CHOICE=!SUGGEST!"
+if "!OSV_CHOICE!"=="" set "OSV_CHOICE=0"
+if "!OSV_CHOICE!"=="0" (
 	echo [OK] Skipped: !ORPHAN! - no OSV assigned
 	set /a CNT_SKIP+=1
 	echo.
@@ -276,7 +282,7 @@ if errorlevel 1 goto :OSV_FEHLER
 if !OSV_CHOICE! GTR %OSV_COUNT% goto :OSV_FEHLER
 goto :OSV_OK
 :OSV_FEHLER
-echo Invalid input^^! Please enter a number between 1 and %OSV_COUNT%.
+echo Invalid input^^! Please enter a number between 0 and %OSV_COUNT%.
 goto :ASK_OSV
 :OSV_OK
 
@@ -291,7 +297,13 @@ goto :eof
 :SHOW_OSV
 set "MARK="
 echo !ORPHAN_BASE!| findstr /b /l /i /c:"!OSVBASE_%~1!" >nul
-if not errorlevel 1 set "MARK= [name matches]"
+if errorlevel 1 goto :SHOW_OSV_ECHO
+set "MARK= [name matches]"
+:: With multiple matches, suggest the longest name
+if not defined SUGGEST set "SUGGEST=%~1"
+echo !OSVBASE_%~1!| findstr /b /l /i /c:"!OSVBASE_%SUGGEST%!" >nul
+if not errorlevel 1 set "SUGGEST=%~1"
+:SHOW_OSV_ECHO
 echo         %~1 - !OSV_%~1!!MARK!
 goto :eof
 
