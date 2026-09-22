@@ -1,4 +1,4 @@
-:: Version 1.1.1 - 22.09.2026 - @nurjns
+:: Version 1.1.2 - 22.09.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
