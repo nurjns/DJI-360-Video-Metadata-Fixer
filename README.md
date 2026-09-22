@@ -4,6 +4,7 @@ A Windows batch script to automatically restore the original recording date, set
 
 ## Features
 * **Metadata Restoration:** Extracts original recording timestamps from `.OSV` raw files (via filename or modification date) and writes them to the exported `.mp4`.
+* **Multiple Exports per OSV (interactive):** If there are several `.mp4` exports of the same `.OSV` (e.g. `CAM_..._D.mp4` and `CAM_..._D_2.mp4`), only the one with the exact same name is matched automatically. For every other `.mp4` without an `.OSV` of the same name, you are asked which `.OSV` it belongs to — `.OSV` files whose name matches the beginning of the video name are marked as `[name matches]`. Leave the input blank to skip the video.
 * **DJI Mimo Exports (from filename):** For videos exported directly from the DJI Mimo app (`dji_mimo_YYYYMMDD_HHMMSS_...`), the recording date is read straight from the filename — no `.OSV` file required.
 * **Edited / Stitched Videos (interactive):** For finished, edited 360° videos from DJI Mimo that have no matching `.OSV` (e.g. `compose_video_...`), a small date & time picker window opens so you can set the recording date yourself.
 * **Timezone Support:** Prompts for the recording timezone (defaults to your PC's local timezone) to fix offset issues in video players.
@@ -17,8 +18,8 @@ Place the executable files below in the same directory as the script, or add the
 
 ## How to Use
 1. Save the batch script in the folder containing your exported `.mp4` videos (and any `.OSV` raw files, if you have them).
-2. Ensure `ffmpeg.exe` and `exiftool.exe` are present in the same folder.
-3. Double-click the script to run it and follow the on-screen prompts.
+2. Ensure `exiftool.exe` (and `ffmpeg.exe`, if you want to compress) are present in the same folder.
+3. Double-click the script to run it and follow the on-screen prompts. If an `.mp4` can't be matched to an `.OSV` by name, enter the number of the matching `.OSV` from the list or leave it blank to skip.
 
 ## Disclaimer
 This project is an independent open-source tool and is not affiliated, associated, authorized, endorsed by, or in any way officially connected with SZ DJI Technology Co., Ltd. (DJI) or any of its subsidiaries or affiliates.
