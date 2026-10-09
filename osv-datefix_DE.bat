@@ -1,4 +1,4 @@
-:: Version 1.1.3 - 22.09.2026 - @nurjns
+:: Version 1.1.4 - 09.10.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -138,7 +138,6 @@ powershell -c [console]::beep(500,200)
 pause
 exit /b 0
 
-
 :: ==========================================================
 :: Verarbeitung einer einzelnen OSV-Datei
 :: ==========================================================
@@ -237,7 +236,6 @@ if /i "%COMPRESS%"=="y" (
 )
 goto :eof
 
-
 :: ==========================================================
 :: MP4 ohne gleichnamige OSV einer OSV zuordnen
 :: ==========================================================
@@ -293,7 +291,6 @@ call :PROCESS "!OSV_PICK!" "!ORPHAN!"
 echo.
 goto :eof
 
-
 :: ==========================================================
 :: OSV-Eintrag der Auswahlliste anzeigen (mit Hinweis, wenn der Name passt)
 :: ==========================================================
@@ -309,7 +306,6 @@ if not errorlevel 1 set "SUGGEST=%~1"
 :SHOW_OSV_ECHO
 echo         %~1 - !OSV_%~1!!MARK!
 goto :eof
-
 
 :: ==========================================================
 :: Eigenstaendige MP4-Datei ohne OSV verarbeiten (dji_mimo / compose_video)
@@ -438,21 +434,22 @@ set "WRITE_OK=1"
 
 :: --- Pruefen ob das Datum bereits korrekt gesetzt ist ---
 set "CURRENT="
-for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -QuickTime:CreateDate "!TARGET!" 2^>nul`) do set "CURRENT=%%T"
-if "!CURRENT!"=="!TIMESTAMP!" (
+for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -DateTimeOriginal "!TARGET!" 2^>nul`) do set "CURRENT=%%T"
+if "!CURRENT!"=="!TIMESTAMP!!TIMEZONE!" (
 	echo [OK] Datum bereits korrekt: !TARGET!
 	goto :eof
 )
 
-"%EXIFTOOL%" -overwrite_original ^
+"%EXIFTOOL%" -overwrite_original -api QuickTimeUTC=1 ^
 	"-DateTimeOriginal=!TIMESTAMP!!TIMEZONE!" ^
+	"-CreationDate=!TIMESTAMP!!TIMEZONE!" ^
 	"-OffsetTimeOriginal=!TIMEZONE!" ^
-	"-QuickTime:CreateDate=!TIMESTAMP!" ^
-	"-QuickTime:ModifyDate=!TIMESTAMP!" ^
-	"-QuickTime:TrackCreateDate=!TIMESTAMP!" ^
-	"-QuickTime:TrackModifyDate=!TIMESTAMP!" ^
-	"-QuickTime:MediaCreateDate=!TIMESTAMP!" ^
-	"-QuickTime:MediaModifyDate=!TIMESTAMP!" ^
+	"-QuickTime:CreateDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:ModifyDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:TrackCreateDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:TrackModifyDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:MediaCreateDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:MediaModifyDate=!TIMESTAMP!!TIMEZONE!" ^
 	"-FileModifyDate=!TIMESTAMP!!TIMEZONE!" ^
 	"!TARGET!"
 
@@ -464,8 +461,8 @@ if errorlevel 1 (
 
 :: --- Kontrolle: geschriebenen Wert zurueckgelesen ---
 set "VERIFY="
-for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -QuickTime:CreateDate "!TARGET!" 2^>nul`) do set "VERIFY=%%T"
-if not "!VERIFY!"=="!TIMESTAMP!" (
+for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -DateTimeOriginal "!TARGET!" 2^>nul`) do set "VERIFY=%%T"
+if not "!VERIFY!"=="!TIMESTAMP!!TIMEZONE!" (
 	echo [FEHLER] Kontrolle fehlgeschlagen fuer "!TARGET!" - gelesen: !VERIFY!
 	set "WRITE_OK=0"
 	goto :eof
