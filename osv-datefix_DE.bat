@@ -443,6 +443,8 @@ if "!CURRENT!"=="!TIMESTAMP!!TIMEZONE!" (
 "%EXIFTOOL%" -overwrite_original -api QuickTimeUTC=1 ^
 	"-DateTimeOriginal=!TIMESTAMP!!TIMEZONE!" ^
 	"-CreationDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-Keys:CreationDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-UserData:DateTimeOriginal=!TIMESTAMP!!TIMEZONE!" ^
 	"-OffsetTimeOriginal=!TIMEZONE!" ^
 	"-QuickTime:CreateDate=!TIMESTAMP!!TIMEZONE!" ^
 	"-QuickTime:ModifyDate=!TIMESTAMP!!TIMEZONE!" ^
