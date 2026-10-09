@@ -1,4 +1,4 @@
-:: Version 1.1.3 - 2026-09-22 - @nurjns
+:: Version 1.1.4 - 2026-10-09 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -434,40 +434,41 @@ set "WRITE_OK=1"
 
 :: --- Check whether the date is already set correctly ---
 set "CURRENT="
-for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -QuickTime:CreateDate "!TARGET!" 2^>nul`) do set "CURRENT=%%T"
-if "!CURRENT!"=="!TIMESTAMP!" (
-	echo [OK] Date already correct: !TARGET!
+for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -DateTimeOriginal "!TARGET!" 2^>nul`) do set "CURRENT=%%T"
+if "!CURRENT!"=="!TIMESTAMP!!TIMEZONE!" (
+	echo [OK] Datum bereits korrekt: !TARGET!
 	goto :eof
 )
 
-"%EXIFTOOL%" -overwrite_original ^
+"%EXIFTOOL%" -overwrite_original -api QuickTimeUTC=1 ^
 	"-DateTimeOriginal=!TIMESTAMP!!TIMEZONE!" ^
+	"-CreationDate=!TIMESTAMP!!TIMEZONE!" ^
 	"-OffsetTimeOriginal=!TIMEZONE!" ^
-	"-QuickTime:CreateDate=!TIMESTAMP!" ^
-	"-QuickTime:ModifyDate=!TIMESTAMP!" ^
-	"-QuickTime:TrackCreateDate=!TIMESTAMP!" ^
-	"-QuickTime:TrackModifyDate=!TIMESTAMP!" ^
-	"-QuickTime:MediaCreateDate=!TIMESTAMP!" ^
-	"-QuickTime:MediaModifyDate=!TIMESTAMP!" ^
+	"-QuickTime:CreateDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:ModifyDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:TrackCreateDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:TrackModifyDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:MediaCreateDate=!TIMESTAMP!!TIMEZONE!" ^
+	"-QuickTime:MediaModifyDate=!TIMESTAMP!!TIMEZONE!" ^
 	"-FileModifyDate=!TIMESTAMP!!TIMEZONE!" ^
 	"!TARGET!"
 
 if errorlevel 1 (
-	echo [ERROR] ExifTool could not write "!TARGET!"
+	echo [FEHLER] ExifTool konnte "!TARGET!" nicht schreiben
 	set "WRITE_OK=0"
 	goto :eof
 )
 
 :: --- Verification: read back the value that was written ---
 set "VERIFY="
-for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -QuickTime:CreateDate "!TARGET!" 2^>nul`) do set "VERIFY=%%T"
-if not "!VERIFY!"=="!TIMESTAMP!" (
-	echo [ERROR] Verification failed for "!TARGET!" - read back: !VERIFY!
+for /f "usebackq delims=" %%T in (`%EXIFTOOL% -s3 -DateTimeOriginal "!TARGET!" 2^>nul`) do set "VERIFY=%%T"
+if not "!VERIFY!"=="!TIMESTAMP!!TIMEZONE!" (
+	echo [FEHLER] Kontrolle fehlgeschlagen fuer "!TARGET!" - gelesen: !VERIFY!
 	set "WRITE_OK=0"
 	goto :eof
 )
 
-echo [OK] Processed: !TARGET!
+echo [OK] Verarbeitet: !TARGET!
 goto :eof
 
 :: ==========================================================
