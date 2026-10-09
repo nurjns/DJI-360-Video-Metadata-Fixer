@@ -134,7 +134,7 @@ for %%F in (dji_mimo_*.mp4 compose_video_*.mp4) do (
 echo ----------------------------------------------------------
 echo Done. Successful: %CNT_OK%  Skipped: %CNT_SKIP%  Errors: %CNT_ERR%
 del "%DONE_LIST%" >nul 2>&1
-powershell -c [console]::beep(500,200)
+powershell -c "[console]::beep(500,200)"
 pause
 exit /b 0
 
