@@ -176,10 +176,18 @@ if exist "!BASE!.mp4" (
 	set "MP4=!BASE!.mp4"
 ) else (
 	echo [WARNUNG] Keine passende Datei "!BASE!.mp4" gefunden.
+	powershell -c "[console]::beep(200,500)"
 	set "CAND_COUNT=0"
+	set "CAND_FILE="
 	for %%C in ("!BASE!*.mp4") do (
 		set /a CAND_COUNT+=1
+		set "CAND_FILE=%%~nxC"
 		echo         Moeglicher Treffer: %%~nxC
+	)
+	if !CAND_COUNT! EQU 1 (
+		echo [INFO] Einziger Treffer automatisch ausgewaehlt: !CAND_FILE!
+		set "MP4=!CAND_FILE!"
+		goto :MP4_OK
 	)
 	if !CAND_COUNT! EQU 0 echo         Keine MP4 mit passendem Namensanfang im Ordner.
 	goto :ASK_MP4
@@ -260,6 +268,7 @@ if not errorlevel 1 goto :eof
 
 echo Bearbeite: !ORPHAN!
 echo [WARNUNG] Keine gleichnamige OSV gefunden. Zu welcher OSV gehoert diese MP4?
+powershell -c "[console]::beep(200,500)"
 set "SUGGEST="
 for /l %%I in (1,1,%OSV_COUNT%) do call :SHOW_OSV %%I
 set "ASK_TXT=Nummer der OSV (leer = ueberspringen): "
