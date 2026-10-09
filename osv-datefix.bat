@@ -176,12 +176,20 @@ if exist "!BASE!.mp4" (
 	set "MP4=!BASE!.mp4"
 ) else (
 	echo [WARNING] No matching file "!BASE!.mp4" found.
+	powershell -c "[console]::beep(200,500)"
 	set "CAND_COUNT=0"
+	set "CAND_FILE="
 	for %%C in ("!BASE!*.mp4") do (
 		set /a CAND_COUNT+=1
+		set "CAND_FILE=%%~nxC"
 		echo         Possible match: %%~nxC
 	)
-	if !CAND_COUNT! EQU 0 echo         No MP4 with matching filename prefix in this folder.
+	if !CAND_COUNT! EQU 1 (
+		echo [INFO] Single match selected automatically: !CAND_FILE!
+		set "MP4=!CAND_FILE!"
+		goto :MP4_OK
+	)
+	if !CAND_COUNT! EQU 0 echo         No MP4 with matching name prefix found in this folder.
 	goto :ASK_MP4
 )
 goto :MP4_OK
@@ -260,6 +268,7 @@ if not errorlevel 1 goto :eof
 
 echo Processing: !ORPHAN!
 echo [WARNING] No OSV of the same name found. Which OSV does this MP4 belong to?
+powershell -c "[console]::beep(200,500)"
 set "SUGGEST="
 for /l %%I in (1,1,%OSV_COUNT%) do call :SHOW_OSV %%I
 set "ASK_TXT=Number of the OSV (leave blank to skip): "
