@@ -1,4 +1,4 @@
-:: Version 1.1.4 - 2026-10-09 - @nurjns
+:: Version 1.1.5 - 2026-11-08 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -172,27 +172,28 @@ echo [INFO] Recording date: !TIMESTAMP!!TIMEZONE!
 if defined MP4 goto :MP4_OK
 
 :: --- Find matching MP4 ---
-if exist "!BASE!.mp4" (
-	set "MP4=!BASE!.mp4"
-) else (
-	echo [WARNING] No matching file "!BASE!.mp4" found.
-	powershell -c "[console]::beep(200,500)"
-	set "CAND_COUNT=0"
-	set "CAND_FILE="
-	for %%C in ("!BASE!*.mp4") do (
-		set /a CAND_COUNT+=1
-		set "CAND_FILE=%%~nxC"
-		echo         Possible match: %%~nxC
-	)
-	if !CAND_COUNT! EQU 1 (
-		echo [INFO] Single match selected automatically: !CAND_FILE!
-		set "MP4=!CAND_FILE!"
-		goto :MP4_OK
-	)
-	if !CAND_COUNT! EQU 0 echo         No MP4 with matching name prefix found in this folder.
-	goto :ASK_MP4
+set "MP4="
+for %%C in ("!BASE!*.mp4") do (
+	if /i "%%~nxC"=="!BASE!.mp4" set "MP4=%%~nxC"
 )
-goto :MP4_OK
+if defined MP4 goto :MP4_OK
+
+echo [WARNING] No matching file "!BASE!.mp4" found.
+powershell -c "[console]::beep(200,500)"
+set "CAND_COUNT=0"
+set "CAND_FILE="
+for %%C in ("!BASE!*.mp4") do (
+	set /a CAND_COUNT+=1
+	set "CAND_FILE=%%~nxC"
+	echo         Possible match: %%~nxC
+)
+if !CAND_COUNT! EQU 1 (
+	echo [INFO] Single match selected automatically: !CAND_FILE!
+	set "MP4=!CAND_FILE!"
+	goto :MP4_OK
+)
+if !CAND_COUNT! EQU 0 echo         No MP4 with matching name prefix found in this folder.
+goto :ASK_MP4
 
 :ASK_MP4
 set "MANUAL="
@@ -210,7 +211,7 @@ if not exist "!MANUAL!" (
 	goto :ASK_MP4
 )
 :: Make sure it isn't a directory
-if exist "!MANUAL!\" (
+if exist "!MANUAL!\NUL" (
 	echo [ERROR] "!MANUAL!" is a directory.
 	goto :ASK_MP4
 )
