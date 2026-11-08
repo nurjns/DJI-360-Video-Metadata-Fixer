@@ -1,4 +1,4 @@
-:: Version 1.1.4 - 09.10.2026 - @nurjns
+:: Version 1.1.5 - 08.11.2026 - @nurjns
 
 @echo off
 setlocal enabledelayedexpansion
@@ -134,7 +134,7 @@ for %%F in (dji_mimo_*.mp4 compose_video_*.mp4) do (
 echo ----------------------------------------------------------
 echo Fertig. Erfolgreich: %CNT_OK%  Uebersprungen: %CNT_SKIP%  Fehler: %CNT_ERR%
 del "%DONE_LIST%" >nul 2>&1
-powershell -c "[console]::beep(500,200)"
+powershell -c [console]::beep(500,200)
 pause
 exit /b 0
 
@@ -172,27 +172,21 @@ echo [INFO] Aufnahmedatum: !TIMESTAMP!!TIMEZONE!
 if defined MP4 goto :MP4_OK
 
 :: --- Passende MP4 suchen ---
-if exist "!BASE!.mp4" (
-	set "MP4=!BASE!.mp4"
-) else (
-	echo [WARNUNG] Keine passende Datei "!BASE!.mp4" gefunden.
-	powershell -c "[console]::beep(200,500)"
-	set "CAND_COUNT=0"
-	set "CAND_FILE="
-	for %%C in ("!BASE!*.mp4") do (
-		set /a CAND_COUNT+=1
-		set "CAND_FILE=%%~nxC"
-		echo         Moeglicher Treffer: %%~nxC
-	)
-	if !CAND_COUNT! EQU 1 (
-		echo [INFO] Einziger Treffer automatisch ausgewaehlt: !CAND_FILE!
-		set "MP4=!CAND_FILE!"
-		goto :MP4_OK
-	)
-	if !CAND_COUNT! EQU 0 echo         Keine MP4 mit passendem Namensanfang im Ordner.
-	goto :ASK_MP4
+set "MP4="
+for %%C in ("!BASE!*.mp4") do (
+	if /i "%%~nxC"=="!BASE!.mp4" set "MP4=%%~nxC"
 )
-goto :MP4_OK
+if defined MP4 goto :MP4_OK
+
+echo [WARNUNG] Keine passende Datei "!BASE!.mp4" gefunden.
+powershell -c [console]::beep(200,500)
+set "CAND_COUNT=0"
+for %%C in ("!BASE!*.mp4") do (
+	set /a CAND_COUNT+=1
+	echo         Moeglicher Treffer: %%~nxC
+)
+if !CAND_COUNT! EQU 0 echo         Keine MP4 mit passendem Namensanfang im Ordner.
+goto :ASK_MP4
 
 :ASK_MP4
 set "MANUAL="
@@ -210,7 +204,7 @@ if not exist "!MANUAL!" (
 	goto :ASK_MP4
 )
 :: Sicherstellen, dass es kein Verzeichnis ist
-if exist "!MANUAL!\" (
+if exist "!MANUAL!\NUL" (
 	echo [FEHLER] "!MANUAL!" ist ein Verzeichnis.
 	goto :ASK_MP4
 )
@@ -268,7 +262,7 @@ if not errorlevel 1 goto :eof
 
 echo Bearbeite: !ORPHAN!
 echo [WARNUNG] Keine gleichnamige OSV gefunden. Zu welcher OSV gehoert diese MP4?
-powershell -c "[console]::beep(200,500)"
+powershell -c [console]::beep(200,500)
 set "SUGGEST="
 for /l %%I in (1,1,%OSV_COUNT%) do call :SHOW_OSV %%I
 set "ASK_TXT=Nummer der OSV (leer = ueberspringen): "
